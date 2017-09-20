@@ -2,7 +2,7 @@ import yaml
 
 import pytest
 
-from common import (
+from kubevirt.errors import (
     EntityNotFound,
     WaitForTimeout,
 )

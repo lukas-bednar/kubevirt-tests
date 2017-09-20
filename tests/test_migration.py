@@ -4,6 +4,8 @@ import pytest
 
 from common import (
     KVOW,
+)
+from kubevirt.errors import (
     WaitForTimeout,
 )
 
@@ -12,7 +14,7 @@ def test_migrate_non_existing_vm(default_kubevirt_client, request):
     mig_c = default_kubevirt_client.get_resource('migrations')
 
     # Clean all migrations
-    for m in mig_c.list():
+    for m in mig_c.list()['items']:
         mig_c.delete(m['metadata']['name'])
 
     # Load testing migration
@@ -40,7 +42,7 @@ def test_migrate_vm(default_kubevirt_client, default_test_vm, request):
     mig_c = default_kubevirt_client.get_resource('migrations')
 
     # Clean all migrations
-    for m in mig_c.list():
+    for m in mig_c.list()['items']:
         mig_c.delete(m['metadata']['name'])
 
     # Load testing migration
