@@ -27,7 +27,7 @@ def default_kubevirt_client():
 
 @pytest.fixture
 def default_test_vm(default_kubevirt_client, request):
-    vms_c = default_kubevirt_client.get_resource('vms')
+    vms_c = default_kubevirt_client.get_resource('virtualmachines')
     # Load testing vm
     with open('data/vm.yaml') as fh:
         body = yaml.load(fh.read())

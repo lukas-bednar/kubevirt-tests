@@ -73,6 +73,6 @@ def test_migrate_vm(default_kubevirt_client, default_test_vm, request):
         pytest.fail("Migration didn't complete.")
 
     # Verify that VM is running on second different
-    vm_c = default_kubevirt_client.get_resource('vms')
+    vm_c = default_kubevirt_client.get_resource('virtualmachines')
     vm = vm_c.get(default_test_vm['metadata']['name'])
     assert vm_node != vm['status']['nodeName']

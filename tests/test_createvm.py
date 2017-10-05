@@ -9,14 +9,14 @@ from kubevirt.errors import (
 
 
 def test_getting_non_existing_vm(default_kubevirt_client):
-    vms_c = default_kubevirt_client.get_resource('vms')
+    vms_c = default_kubevirt_client.get_resource('virtualmachines')
 
     with pytest.raises(EntityNotFound):
         vms_c.get("non-existing")
 
 
 def test_create_vm(default_kubevirt_client, request):
-    vms_c = default_kubevirt_client.get_resource('vms')
+    vms_c = default_kubevirt_client.get_resource('virtualmachines')
 
     # Load testing VM
     with open('data/vm.yaml') as fh:
