@@ -1,6 +1,7 @@
 import yaml
 
 import pytest
+import kubevirt
 
 import common
 
@@ -10,7 +11,7 @@ def delete_migrations(client):
         common.NAMESPACE
     ).items:
         client.delete_namespaced_migration(
-            common.NAMESPACE, common.get_name(m)
+            kubevirt.V1DeleteOptions(), common.NAMESPACE, common.get_name(m)
         )
 
 
@@ -29,7 +30,8 @@ def test_migrate_non_existing_vm(default_kubevirt_client, request):
         )
         request.addfinalizer(
             lambda: default_kubevirt_client.delete_namespaced_migration(
-                common.NAMESPACE, common.get_name(m)
+                kubevirt.V1DeleteOptions(), common.NAMESPACE,
+                common.get_name(m)
             )
         )
     except Exception as ex:
@@ -66,7 +68,8 @@ def test_migrate_vm(default_kubevirt_client, default_test_vm, request):
         )
         request.addfinalizer(
             lambda: default_kubevirt_client.delete_namespaced_migration(
-                common.NAMESPACE, common.get_name(m)
+                kubevirt.V1DeleteOptions(), common.NAMESPACE,
+                common.get_name(m)
             )
         )
     except Exception as ex:
