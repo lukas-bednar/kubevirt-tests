@@ -2,20 +2,21 @@ import yaml
 
 import pytest
 
-from common import (
-    KVOW,
-)
-from kubevirt.errors import (
-    WaitForTimeout,
-)
+import common
+
+
+def delete_migrations(client):
+    for m in client.list_namespaced_migration(
+        common.NAMESPACE
+    ).items:
+        client.delete_namespaced_migration(
+            common.NAMESPACE, common.get_name(m)
+        )
 
 
 def test_migrate_non_existing_vm(default_kubevirt_client, request):
-    mig_c = default_kubevirt_client.get_resource('migrations')
-
     # Clean all migrations
-    for m in mig_c.list()['items']:
-        mig_c.delete(m['metadata']['name'])
+    delete_migrations(default_kubevirt_client)
 
     # Load testing migration
     with open('data/migration.yaml') as fh:
@@ -23,56 +24,74 @@ def test_migrate_non_existing_vm(default_kubevirt_client, request):
 
     # Create Migration
     try:
-        m = mig_c.create(body)
-        request.addfinalizer(lambda: mig_c.delete(m['metadata']['name']))
+        m = default_kubevirt_client.create_namespaced_migration(
+            body, common.NAMESPACE
+        )
+        request.addfinalizer(
+            lambda: default_kubevirt_client.delete_namespaced_migration(
+                common.NAMESPACE, common.get_name(m)
+            )
+        )
     except Exception as ex:
         raise AssertionError(ex)
 
     # Wait for migration to fail
     try:
-        for event in mig_c.watch(20):
-            if event['type'] == 'MODIFIED':
-                if KVOW(event['object']).status == "Failed":
+        w = common.Watch(
+            default_kubevirt_client.list_namespaced_migration,
+            common.NAMESPACE
+        )
+        for event in w.watch(20):
+            if event['type'] in ('ADDED', 'MODIFIED'):
+                if common.get_status(event['object']) == "Failed":
                     break
-    except WaitForTimeout:
+    except common.WaitForTimeout:
         pytest.fail("Migration didn't fail.")
 
 
 def test_migrate_vm(default_kubevirt_client, default_test_vm, request):
-    mig_c = default_kubevirt_client.get_resource('migrations')
-
     # Clean all migrations
-    for m in mig_c.list()['items']:
-        mig_c.delete(m['metadata']['name'])
+    delete_migrations(default_kubevirt_client)
 
     # Load testing migration
     with open('data/migration.yaml') as fh:
         body = yaml.load(fh.read())
 
-    vm_node = default_test_vm['status']['nodeName']
+    vm_node = common.get_node_name_vm_running(default_test_vm)
 
     # Create Migration
     try:
-        m = mig_c.create(body)
-        request.addfinalizer(lambda: mig_c.delete(m['metadata']['name']))
+        m = default_kubevirt_client.create_namespaced_migration(
+            body, common.NAMESPACE
+        )
+        request.addfinalizer(
+            lambda: default_kubevirt_client.delete_namespaced_migration(
+                common.NAMESPACE, common.get_name(m)
+            )
+        )
     except Exception as ex:
         raise AssertionError(ex)
 
     # Wait for migration to complete
     def desired_state(event):
-        if event['type'] == 'MODIFIED':
-            if KVOW(event['object']).status == "Succeeded":
+        if event['type'] in ('ADDED', 'MODIFIED'):
+            if common.get_status(event['object']) == "Succeeded":
                 return True
         return False
     try:
-        m = mig_c.wait_for_item(
-            name=m['metadata']['name'], timeout=120,
+        w = common.Watch(
+            default_kubevirt_client.list_namespaced_migration,
+            common.NAMESPACE
+        )
+        m = w.wait_for_item(
+            name=common.get_name(m), timeout=120,
             success_condition=desired_state,
         )
-    except WaitForTimeout:
+    except common.WaitForTimeout:
         pytest.fail("Migration didn't complete.")
 
     # Verify that VM is running on second different
-    vm_c = default_kubevirt_client.get_resource('virtualmachines')
-    vm = vm_c.get(default_test_vm['metadata']['name'])
-    assert vm_node != vm['status']['nodeName']
+    vm = default_kubevirt_client.read_namespaced_virtual_machine(
+        common.get_name(default_test_vm), common.NAMESPACE
+    )
+    assert vm_node != common.get_node_name_vm_running(vm)
