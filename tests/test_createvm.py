@@ -26,7 +26,8 @@ def test_create_vm(default_kubevirt_client, request):
         )
         request.addfinalizer(
             lambda: default_kubevirt_client.delete_namespaced_virtual_machine(
-                common.NAMESPACE, common.get_name(vm)
+                kubevirt.V1DeleteOptions(), common.NAMESPACE,
+                common.get_name(vm)
             )
         )
     except Exception as ex:
