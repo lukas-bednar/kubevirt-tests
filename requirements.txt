@@ -1,4 +1,4 @@
-git+https://github.com/lukas-bednar/kubevirt-pysdk-generated@master
+git+https://github.com/kubevirt/client-python@master
 git+https://github.com/kubernetes-incubator/client-python
 PyYAML
 pytest
